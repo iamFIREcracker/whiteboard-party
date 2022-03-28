@@ -1,0 +1,28 @@
+{
+  "name": "whiteboard-party",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start-dev": "nodemon main.js --ignore state.json --ignore public/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.1.3",
+    "bootstrap-icons": "^1.8.1",
+    "express": "4.17.3",
+    "moment": "^2.29.1",
+    "p5": "^1.4.1",
+    "socket.io": "^4.4.1",
+    "socket.io-client": "^4.4.1",
+    "zbase32": "^1.0.4"
+  },
+  "devDependencies": {
+    "editorconfig": "^0.15.3",
+    "livereload": "^0.9.3",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.5.1"
+  }
+}

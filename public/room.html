@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Whiteboard Party</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="/node_modules/bootstrap/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/node_modules/bootstrap-icons/font/bootstrap-icons.css"
+    />
+  </head>
+  <body class="overflow-hidden">
+    <main>
+      <div
+        class="modal fade"
+        id="infoModal"
+        tabindex="-1"
+        aria-labelledby="infoModalLabel"
+        aria-hidden="true"
+        data-bs-backdrop="static"
+      >
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="infoModalLabel">
+                Welcome to <strong>Whiteboard Party</strong>!
+              </h5>
+            </div>
+            <div class="modal-body">
+              <p>
+                4 colored markers (<i class="bi bi-pen"></i>), and the eraser
+                (<i class="bi bi-eraser"></i>): that's all you need to start
+                collaborating with your team mates!
+              </p>
+
+              <p>Yeah well, <em>that</em>, plus:</p>
+
+              <ul>
+                <li>
+                  A way to move around (<i class="bi bi-arrows-move"></i>,
+                  <i class="bi bi-zoom-in"></i>, and
+                  <i class="bi bi-zoom-out"></i>)
+                </li>
+                <li>
+                  An undo history (<i class="bi bi-arrow-counterclockwise"></i>,
+                  <i class="bi bi-arrow-clockwise"></i>, and
+                  <i class="bi bi-x-lg"></i>)
+                </li>
+                <li>Export capabilities (<i class="bi bi-camera"></i>)</li>
+                <li>Much, much, more... (or maybe not)</li>
+              </ul>
+
+              <p>Anyways, getting started should be quite easy:</p>
+
+              <ul>
+                <li>
+                  First you have to create a new Whiteboard (and if you are
+                  reading this, it lookgs like you already did that!)
+                </li>
+                <li>
+                  Then you have to copy the current page's URL and share it with
+                  yours collaborators
+                </li>
+                <li>
+                  Last you have to start using the Whiteboard, and as you and
+                  the other team mates do it, changes will automatically be
+                  synchronized across all the connected collaborators
+                </li>
+              </ul>
+
+              Before we get started, a few words of warning first!
+
+              <div class="alert alert-warning" role="alert">
+                Whiteboards are <em>secret</em> but not <em>private</em>: this
+                means that anyone with access to the Whiteboard's URL will
+                simply be able to poke around and draw stuff as if the
+                Whiteboard were theirs. So be wary of whom you share your
+                Whiteboards with.
+              </div>
+
+              <div class="alert alert-danger" role="alert">
+                Whiteboards <em>created</em> more than <strong>15</strong> days
+                will be automatically deleted, irrespective of when were they
+                last accessed or edited. Use the export button (<i
+                  class="bi bi-camera"
+                ></i
+                >) to never lose a single bit of information!
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-dismiss="modal"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="controls" class="fixed-top text-center">
+        <div
+          class="btn-group -btn-group-lg bg-white rounded"
+          role="toolbar"
+          aria-label="Toolbar"
+        >
+          <div class="btn-group -btn-group-lg dropdown">
+            <button
+              type="button"
+              class="btn btn-outline-dark"
+              name="color"
+              id="color"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Color"
+            >
+              <i class="bi bi-palette"></i>
+            </button>
+            <ul
+              id="dropdown-color"
+              class="dropdown-menu"
+              aria-labelledby="menu"
+            >
+              <li><a class="dropdown-item" href="#" id="black">Black</a></li>
+              <li><a class="dropdown-item" href="#" id="blue">Blue</a></li>
+              <li><a class="dropdown-item" href="#" id="green">Green</a></li>
+              <li><a class="dropdown-item" href="#" id="red">Red</a></li>
+            </ul>
+          </div>
+
+          <input
+            type="radio"
+            class="btn-check"
+            name="btnradio"
+            id="marker"
+            autocomplete="off"
+          />
+          <label class="btn btn-outline-dark" for="marker" title="Marker">
+            <i class="bi bi-pen"></i>
+          </label>
+
+          <input
+            type="radio"
+            class="btn-check"
+            name="btnradio"
+            id="eraser"
+            autocomplete="off"
+          />
+          <label class="btn btn-outline-dark" for="eraser" title="Eraser">
+            <i class="bi bi-eraser"></i>
+          </label>
+
+          <input
+            type="radio"
+            class="btn-check"
+            name="btnradio"
+            id="handles"
+            autocomplete="off"
+          />
+          <label class="btn btn-outline-dark" for="handles" title="Move around">
+            <i class="bi bi-arrows-move"></i>
+          </label>
+
+          <button
+            type="button"
+            class="btn btn-outline-dark d-none d-md-block"
+            name="redo"
+            id="btn-zoom-out"
+            title="Zoom-out"
+          >
+            <i class="bi bi-zoom-out"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-dark d-none d-md-block"
+            name="redo"
+            id="btn-zoom-in"
+            title="Zoom-in"
+          >
+            <i class="bi bi-zoom-in"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-dark"
+            name="undo"
+            id="undo"
+            title="Undo"
+          >
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-dark"
+            name="redo"
+            id="redo"
+            title="Redo"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-dark d-none d-md-block"
+            name="clear"
+            id="btn-clear"
+            title="Clear"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-dark d-none d-md-block"
+            name="export"
+            id="btn-export"
+            title="Export"
+          >
+            <i class="bi bi-camera"></i>
+          </button>
+
+          <div class="btn-group -btn-group-lg dropdown">
+            <button
+              type="button"
+              class="btn btn-outline-dark rounded-end"
+              name="menu"
+              id="menu"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Extra"
+            >
+              <i class="bi bi-list"></i>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="menu">
+              <li>
+                <a class="dropdown-item d-md-none" href="#" id="menu-zoom-out"
+                  >Zoom-out</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item d-md-none" href="#" id="menu-zoom-in"
+                  >Zoom-in</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item d-md-none" href="#" id="menu-clear"
+                  >Clear</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item d-md-none" href="#" id="menu-export"
+                  >Export</a
+                >
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  id="menu-info"
+                  data-bs-toggle="modal"
+                  data-bs-target="#infoModal"
+                  >Info</a
+                >
+              </li>
+              <li><a class="dropdown-item" href="/new" id="new">New</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+    <script src="/node_modules/p5/lib/p5.js"></script>
+    <script src="/public/main.js"></script>
+    <script>
+      document.write(
+        '<script src="///' +
+          (location.host || "localhost").split(":")[0] +
+          ':35729/livereload.js?snipver=1"></' +
+          "script>"
+      );
+    </script>
+  </body>
+</html>
