@@ -117,10 +117,7 @@ function seconds(n) {
   return n * 1000;
 }
 
-var lrserver = livereload.createServer({
-  port: 35729,
-  host: '127.0.0.1',
-});
-lrserver.watch(__dirname + "/public");
+var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
+lrServer.watch(__dirname + "/public");
 ioServer.listen(23434, '127.0.0.1')
 server.listen(3000, '0.0.0.0');
