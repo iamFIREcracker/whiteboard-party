@@ -7,13 +7,12 @@ var moment = require("moment");
 var path = require("path");
 var socket = require("socket.io");
 var zbase32 = require("zbase32");
+var { createProxyMiddleware } = require('http-proxy-middleware');
 
 var app = express();
 
-var lrserver = livereload.createServer();
-
 var server = http.createServer(app);
-var io = socket(server);
+var io = socket();
 
 var state;
 try {
@@ -21,6 +20,20 @@ try {
 } catch (err) {
   state = new Object(null);
 }
+
+app.use(createProxyMiddleware('/lr', {
+  target: 'http://localhost:35729',
+  ws: true,
+  pathRewrite: {
+    '^/lr/livereload': '/livereload',
+  },
+}));
+app.use(createProxyMiddleware('/socket.io', {
+  target: 'http://localhost:23434',
+  ws: true,
+}))
+app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
+app.use("/public", express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
   res.redirect("/new");
@@ -41,8 +54,6 @@ app.get("/:room", (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'public', 'room.html'));
 });
-app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
-app.use("/public", express.static(path.join(__dirname, "public")));
 
 io.on("connection", (socket) => {
   const room = new URL(socket.handshake.headers.referer).pathname.substring(1);
@@ -102,5 +113,9 @@ function seconds(n) {
   return n * 1000;
 }
 
+var lrserver = livereload.createServer({
+  port: 35729,
+});
 lrserver.watch(__dirname + "/public");
+io.listen(23434)
 server.listen(3000);
