@@ -282,9 +282,11 @@
     <script src="/public/main.js"></script>
     <script>
       document.write(
-        '<script src="///' +
+        '<script src="' +
+          location.protocol +
+          '//' +
           location.host +
-          '/lr/livereload.js?snipver=1&path=lr"></' +
+          '/lr/livereload.js?snipver=1' + (location.protocol === 'https:' ? '&port=443' : '') + '&path=lr"></' +
           "script>"
       );
     </script>
