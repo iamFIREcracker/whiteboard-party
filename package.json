@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "editorconfig": "^0.15.3",
-    "livereload": "^0.9.3",
+    "livereload": "github:iamFIREcracker/node-livereload#ac2b26e4d205f5be54c697eb487e21e98368e826",
     "nodemon": "^2.0.15",
     "prettier": "^2.5.1"
   }

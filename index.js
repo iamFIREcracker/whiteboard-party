@@ -12,7 +12,11 @@ var { createProxyMiddleware } = require('http-proxy-middleware');
 var app = express();
 
 var server = http.createServer(app);
-var io = socket();
+var ioServer = http.createServer((req, res) => {
+  res.writeHead(404);
+  res.end();
+});
+var io = socket(ioServer);
 
 var state;
 try {
@@ -22,14 +26,14 @@ try {
 }
 
 app.use(createProxyMiddleware('/lr', {
-  target: 'http://localhost:35729',
+  target: 'http://127.0.0.1:35729',
   ws: true,
   pathRewrite: {
     '^/lr/livereload': '/livereload',
   },
 }));
 app.use(createProxyMiddleware('/socket.io', {
-  target: 'http://localhost:23434',
+  target: 'http://127.0.0.1:23434',
   ws: true,
 }))
 app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
@@ -115,7 +119,8 @@ function seconds(n) {
 
 var lrserver = livereload.createServer({
   port: 35729,
+  host: '127.0.0.1',
 });
 lrserver.watch(__dirname + "/public");
-io.listen(23434)
+ioServer.listen(23434, '127.0.0.1')
 server.listen(3000);
