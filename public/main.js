@@ -196,6 +196,7 @@ const sketch = function (
   };
 
   p5.mouseWheel = function (event) {
+    if (event.target !== p5.canvas) return;
     zoom(p5.mouseX, p5.mouseY, event.delta);
   };
 
