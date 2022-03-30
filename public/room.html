@@ -26,9 +26,27 @@
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="infoModalLabel">
+              <h3 class="modal-title" id="infoModalLabel">
                 Welcome to <strong>Whiteboard Party</strong>!
-              </h5>
+                <aside style="font-size: 0.75rem">
+                  A product made by
+                  <a
+                    href="https://matteolandi.net"
+                    title="Matteo Landi's homepage"
+                    >Matteo Landi</a
+                  >, hosted on
+                  <a
+                    href="https://replit.com/@iamFIREcracker/whiteboard-party"
+                    title="Whiteboard Party on Replit"
+                    >Replit</a
+                  >, and whose source code is freely available on
+                  <a
+                    href="https://github.com/iamFIREcracker/whiteboard-party"
+                    title="Whiteboard Party on GitHub"
+                    >GitHub</a
+                  >.
+                </aside>
+              </h3>
             </div>
             <div class="modal-body">
               <p>
@@ -59,7 +77,7 @@
               <ul>
                 <li>
                   First you have to create a new Whiteboard (and if you are
-                  reading this, it lookgs like you already did that!)
+                  reading this, it looks like you already did that!)
                 </li>
                 <li>
                   Then you have to copy the current page's URL and share it with
@@ -72,7 +90,7 @@
                 </li>
               </ul>
 
-              Before we get started, a few words of warning first!
+              <p>Before we get started, a few words of warning first!</p>
 
               <div class="alert alert-warning" role="alert">
                 Whiteboards are <em>secret</em> but not <em>private</em>: this
@@ -284,9 +302,11 @@
       document.write(
         '<script src="' +
           location.protocol +
-          '//' +
+          "//" +
           location.host +
-          '/lr/livereload.js?snipver=1' + (location.protocol === 'https:' ? '&port=443' : '') + '&path=lr"></' +
+          "/lr/livereload.js?snipver=1" +
+          (location.protocol === "https:" ? "&port=443" : "") +
+          '&path=lr"></' +
           "script>"
       );
     </script>
