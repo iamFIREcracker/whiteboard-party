@@ -9,21 +9,24 @@ var socket = require("socket.io");
 var zbase32 = require("zbase32");
 var { createProxyMiddleware } = require('http-proxy-middleware');
 
-var app = express();
-
-var server = http.createServer(app);
-var ioServer = http.createServer((req, res) => {
-  res.writeHead(404);
-  res.end();
-});
-var io = socket(ioServer);
-
 var state;
 try {
   state = JSON.parse(fs.readFileSync("state.json"));
 } catch (err) {
   state = new Object(null);
 }
+
+var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
+lrServer.watch(__dirname + "/public");
+
+var ioServer = http.createServer((req, res) => {
+  res.writeHead(404);
+  res.end();
+});
+ioServer.listen(23434, '127.0.0.1')
+var io = socket(ioServer);
+
+var app = express();
 
 app.use(createProxyMiddleware('/lr', {
   target: 'http://127.0.0.1:35729',
@@ -58,6 +61,9 @@ app.get("/:room", (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'public', 'room.html'));
 });
+
+var server = http.createServer(app);
+server.listen(3000, '0.0.0.0');
 
 io.on("connection", (socket) => {
   const room = new URL(socket.handshake.headers.referer).pathname.substring(1);
@@ -116,8 +122,3 @@ setInterval(function syncToDisk() {
 function seconds(n) {
   return n * 1000;
 }
-
-var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
-lrServer.watch(__dirname + "/public");
-ioServer.listen(23434, '127.0.0.1')
-server.listen(3000, '0.0.0.0');
