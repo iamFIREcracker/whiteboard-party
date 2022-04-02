@@ -109,7 +109,7 @@ setInterval(function syncToDisk() {
   const copy = {};
   for (const key of Object.keys(state)) {
     const cdate = moment.utc(key.substring(0, 8), "YYYYMMDD");
-    if (today.diff(cdate, 'days') < 15) {
+    if (key === "20220402.b4t4fmyrcf" || today.diff(cdate, 'days') < 15) {
       copy[key] = state[key];
     }
   }
