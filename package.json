@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start-dev": "nodemon main.js --ignore state.json --ignore public/"
+    "start-dev": "nodemon index.js --ignore state.json --ignore public/"
   },
   "keywords": [],
   "author": "",
