@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "whiteboard_party",
+  "project_id": "719a2bb2-b10e-45b2-a6ad-acf28ce6f2e6"
+}
