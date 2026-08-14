@@ -1,0 +1,1 @@
+{"id":"int-0770e6f6aaa0cec710d23ca4d6f7eb61","kind":"field_change","created_at":"2026-08-14T15:12:17.168941Z","actor":"Matteo Landi","issue_id":"whiteboard-party-bzh.6","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Rebooted droplet into kernel 7.0.0-29; reboot-required flag gone; myvps-review passes all 15 checks"}}
