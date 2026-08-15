@@ -28,19 +28,6 @@ var io = socket(ioServer);
 
 var app = express();
 
-if (!PRODUCTION) {
-  var livereload = require("livereload");
-  var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
-  lrServer.watch(__dirname + "/public");
-
-  app.use(createProxyMiddleware('/lr', {
-    target: 'http://127.0.0.1:35729',
-    ws: true,
-    pathRewrite: {
-      '^/lr': '',
-    },
-  }));
-}
 app.use(createProxyMiddleware('/socket.io', {
   target: 'http://127.0.0.1:23434',
   ws: true,

@@ -16,7 +16,7 @@ Multiplayer whiteboard: a single-file Express + Socket.IO server (`index.js`) an
 - **State model**: server keeps all whiteboard state in memory as `state[room] = { undo: [], redo: [] }`, where entries are shapes (lists of colored points). Every 30s the state is flushed to `state.json`, omitting rooms whose `YYYYMMDD` prefix is 15+ days old (except the hardcoded pinned room `20220402.b4t4fmyrcf`); in-memory state is never pruned, so those rooms stay live and joinable until a restart, when `state.json` is read back.
 - **Sync protocol**: clients get the full undo/redo history via an `init` event on connect, then emit user commands (`draw`, `undo`, `redo`, `clear`). The server updates its own copy of the history (acting as a non-drawing client) and rebroadcasts each command to the room; every client replays commands locally to keep histories in sync. The room is derived server-side from the socket's `Referer` header.
 - **Client drawing**: one big 4000x2000 off-screen p5 graphic painted onto the visible canvas; users pan/zoom over it. Local in-progress shapes (`lshape`) are drawn immediately and only emitted on input end; remote shapes (`rshape`) arrive via socket events.
-- **Internal proxying**: the main server on :3000 proxies `/socket.io` to an internal Socket.IO server on 127.0.0.1:23434 and `/lr` to a livereload server on :35729 (which watches `public/`).
+- **Internal proxying**: the main server on :3000 proxies `/socket.io` to an internal Socket.IO server on 127.0.0.1:23434.
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
