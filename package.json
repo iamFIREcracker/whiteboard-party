@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "start-dev": "nodemon index.js --ignore state.json --ignore public/"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [],
   "author": "",

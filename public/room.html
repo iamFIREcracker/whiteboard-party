@@ -299,16 +299,21 @@
     <script src="/node_modules/p5/lib/p5.js"></script>
     <script src="/public/main.js"></script>
     <script>
-      document.write(
-        '<script src="' +
-          location.protocol +
-          "//" +
-          location.host +
-          "/lr/livereload.js?snipver=1" +
-          (location.protocol === "https:" ? "&port=443" : "") +
-          '&path=lr"></' +
-          "script>"
-      );
+      if (
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1"
+      ) {
+        document.write(
+          '<script src="' +
+            location.protocol +
+            "//" +
+            location.host +
+            "/lr/livereload.js?snipver=1" +
+            (location.protocol === "https:" ? "&port=443" : "") +
+            '&path=lr"></' +
+            "script>"
+        );
+      }
     </script>
   </body>
 </html>

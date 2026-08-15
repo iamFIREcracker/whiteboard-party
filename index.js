@@ -2,22 +2,22 @@ var crypto = require("crypto").webcrypto;
 var express = require("express");
 var fs = require("fs");
 var http = require("http");
-var livereload = require("livereload");
 var moment = require("moment");
 var path = require("path");
 var socket = require("socket.io");
 var zbase32 = require("zbase32");
 var { createProxyMiddleware } = require('http-proxy-middleware');
 
+var PRODUCTION = process.env.NODE_ENV === "production";
+var STATE_FILE = process.env.STATE_FILE || "state.json";
+var PORT = process.env.PORT || (PRODUCTION ? 80 : 3000);
+
 var state;
 try {
-  state = JSON.parse(fs.readFileSync("state.json"));
+  state = JSON.parse(fs.readFileSync(STATE_FILE));
 } catch (err) {
   state = new Object(null);
 }
-
-var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
-lrServer.watch(__dirname + "/public");
 
 var ioServer = http.createServer((req, res) => {
   res.writeHead(404);
@@ -28,13 +28,19 @@ var io = socket(ioServer);
 
 var app = express();
 
-app.use(createProxyMiddleware('/lr', {
-  target: 'http://127.0.0.1:35729',
-  ws: true,
-  pathRewrite: {
-    '^/lr': '',
-  },
-}));
+if (!PRODUCTION) {
+  var livereload = require("livereload");
+  var lrServer = livereload.createServer({ port: 35729, host: '127.0.0.1' });
+  lrServer.watch(__dirname + "/public");
+
+  app.use(createProxyMiddleware('/lr', {
+    target: 'http://127.0.0.1:35729',
+    ws: true,
+    pathRewrite: {
+      '^/lr': '',
+    },
+  }));
+}
 app.use(createProxyMiddleware('/socket.io', {
   target: 'http://127.0.0.1:23434',
   ws: true,
@@ -55,6 +61,9 @@ app.get("/new", (req, res) => {
   };
   res.redirect(`/${room}`);
 });
+app.get("/up", (req, res) => {
+  res.status(200).send("OK");
+});
 app.get("/:room", (req, res) => {
   if (!(req.params.room in state)) {
     return res.status(404).send("Not found.");
@@ -63,10 +72,18 @@ app.get("/:room", (req, res) => {
 });
 
 var server = http.createServer(app);
-server.listen(3000, '0.0.0.0');
+server.listen(PORT, '0.0.0.0');
 
 io.on("connection", (socket) => {
-  const room = new URL(socket.handshake.headers.referer).pathname.substring(1);
+  const referer = socket.handshake.headers.referer;
+  let url;
+  try {
+    url = new URL(referer);
+  } catch (err) {
+    console.log(`Rejected [socket=${socket.id},referer=${referer}]`);
+    return socket.disconnect();
+  }
+  const room = url.pathname.substring(1);
   if (!(room in state)) {
     return socket.disconnect();
   }
@@ -104,7 +121,7 @@ io.on("connection", (socket) => {
   });
 });
 
-setInterval(function syncToDisk() {
+function serializeState() {
   const today = moment.utc();
   const copy = {};
   for (const key of Object.keys(state)) {
@@ -113,11 +130,41 @@ setInterval(function syncToDisk() {
       copy[key] = state[key];
     }
   }
-  fs.writeFile("state.json", JSON.stringify(copy), function writeFileCb(err) {
-    if (err) throw err;
-    console.log(`Persisted`);
+  return JSON.stringify(copy);
+}
+
+var syncInterval = setInterval(function syncToDisk() {
+  const data = serializeState();
+  fs.writeFile(STATE_FILE + ".tmp", data, function writeFileCb(err) {
+    if (err) {
+      return console.error(`Failed to persist: ${err}`);
+    }
+    fs.rename(STATE_FILE + ".tmp", STATE_FILE, function renameCb(err) {
+      if (err) {
+        return console.error(`Failed to persist: ${err}`);
+      }
+      console.log(`Persisted`);
+    });
   });
 }, seconds(30));
+
+function shutdown(signal) {
+  console.log(`Received ${signal}, flushing state`);
+  clearInterval(syncInterval);
+  try {
+    // A distinct temp path: clearInterval cannot cancel a periodic write already
+    // dispatched to the threadpool, so sharing STATE_FILE + ".tmp" would let the two
+    // writers interleave. Renames onto STATE_FILE are atomic and last-one-wins.
+    fs.writeFileSync(STATE_FILE + ".shutdown.tmp", serializeState());
+    fs.renameSync(STATE_FILE + ".shutdown.tmp", STATE_FILE);
+    console.log(`Persisted`);
+  } catch (err) {
+    console.error(`Failed to persist: ${err}`);
+  }
+  process.exit(0);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 function seconds(n) {
   return n * 1000;
