@@ -57,6 +57,30 @@ Settings can be changed later without redeploying from scratch:
   `linux/amd64`): `docker buildx build --platform linux/amd64,linux/arm64 --push ...`.
   (polaroid-wall's first arm64-only push died on the box — recorded in its bead ho9.6.)
 
+### Build & push
+
+The `Dockerfile` in the repo root builds the image (pinned `node:22.x-alpine` patch tag,
+see its `FROM` line; prod deps only via `npm ci --omit=dev`; `node_modules` shipped
+because the server serves it at `/node_modules`; runs as the `node` user; listens on 80;
+`/storage` pre-created and owned by `node`).
+
+```bash
+# local sanity build (laptop arch only)
+docker build -t whiteboard-party:dev .
+docker run --rm -d -p 18080:80 -e STATE_FILE=/storage/state.json \
+  --name wbtest whiteboard-party:dev
+curl -fsS localhost:18080/up
+docker rm -f wbtest   # unconditional: --rm only fires on exit, so a failed probe
+                      # would otherwise leave wbtest holding the name and port 18080
+
+# multi-arch build & push (the droplet is amd64)
+echo "$GHCR_TOKEN" | docker login ghcr.io -u iamFIREcracker --password-stdin
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/iamfirecracker/whiteboard-party:latest --push .
+```
+
+Pushing a new `:latest` is itself a deploy once the app is up (`--auto-update` is on).
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.

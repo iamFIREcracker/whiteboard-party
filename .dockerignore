@@ -1,0 +1,17 @@
+node_modules
+state.json
+.git
+.agents
+.beads
+.claude
+.codex
+.dolt
+.DS_Store
+.editorconfig
+.nvmrc
+.prettierrc.js
+.projections.json
+LICENSE
+*.md
+Dockerfile
+.dockerignore
