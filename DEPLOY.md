@@ -163,17 +163,27 @@ Verification, all from outside except where noted:
 Not yet done: drawing from a phone on cellular, and eyeballing the 101 upgrade in real
 browser devtools (item 5's scripted check is the automated stand-in).
 
-### Seeding the pinned room — deferred
+### Seeding the pinned room — done (2026-08-16, crafted seed)
 
-The planned seed (~69KB `state.json` containing pinned room `20220402.b4t4fmyrcf`) did
-NOT happen: the local copy was overwritten with `{}` on 2026-08-15 during local Docker
-verification, and no backup exists on the laptop (no Time Machine). The room currently
-404s in production. If the file is recovered (likely from the old Replit deployment):
-copy it to the volume path on the box (mounted at `/storage` in the app container),
-`chown 1000:1000` if needed (fresh writes come out `1000:1000`, see item 8), and
-restart — state is read once at boot. But the SIGTERM flush overwrites `state.json`
-on every shutdown, so place the file while the app is down:
-`docker stop <app>` → copy file into the volume → `docker start <app>`.
+The original ~69KB drawing was never recovered (local copy overwritten with `{}` on
+2026-08-15; no laptop backup). Instead, room `20220402.b4t4fmyrcf` was seeded with a
+generated welcome message: `seed/gen-seed.js` renders text as stroke shapes
+(`seed/seed-state.json`, 76 shapes). Procedure used (the app must be DOWN when the
+file lands, because the SIGTERM flush overwrites `state.json` on every shutdown):
+
+1. `docker stop once-app-whiteboard-party.a7d346-caec93` (flushes current state).
+2. Pull `state.json` from the volume to the laptop, merge the seed into it (the seed
+   file alone would wipe every other live room), push the merged file back.
+3. `cp` it over `/var/lib/docker/volumes/once-app-whiteboard-party.a7d346/_data/state.json`,
+   `chown 1000:1000`, `docker start` — state is read once at boot.
+
+Volume (previously uncaptured): `once-app-whiteboard-party.a7d346`, mounted at both
+`/storage` and `/rails/storage` in the container. Verified after restart: `/up` 200,
+pinned room 200 serving all 76 `seed-*` shapes over websocket `init`, the one
+pre-existing room with a drawing intact, unknown rooms still 404.
+
+Note: the room is NOT read-only — any visitor can draw over or clear the seed and the
+next flush persists that. Tracked as bead `whiteboard-party-bzh.13`.
 
 ## Box state (2026-08-14)
 
