@@ -81,6 +81,35 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 Pushing a new `:latest` is itself a deploy once the app is up (`--auto-update` is on).
 
+### Local verification (2026-08-16)
+
+`whiteboard-party:dev`, built from commit `9ab1f86`, was exercised end to end before
+anything was pushed. The sanity snippet above skips the volume; the fuller run below
+mirrors what ONCE actually mounts, and is the one to use when re-verifying:
+
+```bash
+docker build -t whiteboard-party:dev .
+docker volume create wp-state
+docker run --rm -d -p 18080:80 -v wp-state:/storage \
+  -e STATE_FILE=/storage/state.json --name wp whiteboard-party:dev
+# ... checks ...
+docker rm -f wp; docker volume rm wp-state
+```
+
+Host port 18080 rather than 3000, which the dev server usually holds.
+
+1. **Health** — `curl -fsS localhost:18080/up` → 200 `OK`. PASS
+2. **Room creation** — `/` → 302 `/new` → 302 `/20260816.yr5xufnp88`, room page 200; `/20200101.nope` → 404. PASS
+3. **Draw / undo / redo / clear** — stroke emitted and echoed by the server; ink 0 → 2600, undo → 0, redo → 2600, clear → 0. PASS
+4. **Reload restores canvas** — `init` replayed the one shape, ink 2719 before and after. PASS
+5. **Two-window live sync** — a shape drawn in page A appeared in page B and vice versa, and an undo and a clear both propagated, none needing a reload. PASS
+6. **No dev-server leakage** — zero `/lr` requests and zero console errors across every page load, probed on both `localhost:18080` and `127.0.0.1:18080`; no 4xx responses at all (only a p5 `willReadFrequently` warning). PASS
+7. **SIGTERM persistence** — a fresh shape was still absent from `state.json` at `docker stop` time, with no periodic `Persisted` logged between the `Draw` and `Received SIGTERM` lines, yet present in the file afterwards; a new container on the same volume re-rendered it. So the shutdown flush, not the 30s timer, saved it. PASS
+8. **Fresh empty volume** — boots with no `state.json` present, `/up` 200, `/new` gives a working room, and the first flush writes `state.json` owned by `node`. PASS
+
+The browser steps (items 3–7) were driven with headless Playwright against the running
+container, not simulated.
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.
