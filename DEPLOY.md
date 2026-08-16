@@ -73,11 +73,17 @@ curl -fsS localhost:18080/up
 docker rm -f wbtest   # unconditional: --rm only fires on exit, so a failed probe
                       # would otherwise leave wbtest holding the name and port 18080
 
-# multi-arch build & push (the droplet is amd64)
-echo "$GHCR_TOKEN" | docker login ghcr.io -u iamFIREcracker --password-stdin
-docker buildx build --platform linux/amd64,linux/arm64 \
+# build & push (the droplet is amd64; add linux/arm64 if multi-arch is ever wanted)
+docker buildx build --platform linux/amd64 \
+  -t ghcr.io/iamfirecracker/whiteboard-party:$(git rev-parse --short HEAD) \
   -t ghcr.io/iamfirecracker/whiteboard-party:latest --push .
 ```
+
+Auth: the laptop's existing Docker Desktop `ghcr.io` login already carries
+`write:packages` (verified via the GitHub API's `x-oauth-scopes` header), so no
+separate `docker login` is needed — the originally planned dedicated `ghcr-push-pat`
+Keychain entry was skipped as unnecessary. The droplet keeps its own read-only
+(`read:packages`) PAT for pulls.
 
 Pushing a new `:latest` is itself a deploy once the app is up (`--auto-update` is on).
 
@@ -109,6 +115,15 @@ Host port 18080 rather than 3000, which the dev server usually holds.
 
 The browser steps (items 3–7) were driven with headless Playwright against the running
 container, not simulated.
+
+### First push (2026-08-16)
+
+Built from commit `b98147e` and pushed as
+`ghcr.io/iamfirecracker/whiteboard-party:b98147e` and `:latest` — single-platform
+`linux/amd64`, manifest digest `sha256:589d0658c9eb…`. The first push created the ghcr
+package **private** (expected; unlike the older apps' public packages — the droplet's
+read PAT covers it). The droplet then pulled `:latest` successfully with that PAT and
+got the same digest.
 
 ## Box state (2026-08-14)
 
