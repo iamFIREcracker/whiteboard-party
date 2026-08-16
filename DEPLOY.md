@@ -185,6 +185,30 @@ pre-existing room with a drawing intact, unknown rooms still 404.
 Note: the room is NOT read-only — any visitor can draw over or clear the seed and the
 next flush persists that. Tracked as bead `whiteboard-party-bzh.13`.
 
+## Second deploy (2026-08-16): read-only pinned room + landing redirect
+
+Shipped commit `f6d2a32` (bead .13): the pinned room rejects draw/undo/redo/clear
+server-side (`init` now carries a `readonly` flag; the client hides drawing controls
+and switches to panning), and `GET /` lands on the pinned room instead of `/new`
+(fallback to `/new` if the room is ever missing from state).
+
+Deploy path learnings:
+
+- Pushing a new `:latest` did NOT roll the app within 15 minutes — `--auto-update`'s
+  cadence is longer than that (or triggered otherwise). Don't rely on it for prompt
+  deploys.
+- `once deploy` fails with `hostname already in use` for an existing app. The forced
+  update that worked (on box): `docker pull ghcr.io/iamfirecracker/whiteboard-party:latest
+  && once update whiteboard.party --image ghcr.io/iamfirecracker/whiteboard-party:latest
+  --env NODE_ENV=production --env STATE_FILE=/storage/state.json` (explicit pull first,
+  in case `once update` skips pulling when the image ref string is unchanged).
+
+Verified from the laptop after the update: `/` 302 → pinned room; `/new` still creates
+rooms; `/up` 200; pinned room `init` has `readonly: true` and all 76 seed shapes;
+draw/undo/redo/clear over websocket produce no echoes and no state change across
+reconnect; a normal room still accepts and persists drawings (`readonly: false`);
+the other three apps still 200. Restart preserved the seeded state (SIGTERM flush).
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.
