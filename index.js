@@ -12,6 +12,10 @@ var PRODUCTION = process.env.NODE_ENV === "production";
 var STATE_FILE = process.env.STATE_FILE || "state.json";
 var PORT = process.env.PORT || (PRODUCTION ? 80 : 3000);
 
+// The welcome board: exempt from pruning, read-only, and where GET / lands.
+var PINNED_ROOM = "20220402.b4t4fmyrcf";
+var READONLY_ROOMS = [PINNED_ROOM];
+
 var state;
 try {
   state = JSON.parse(fs.readFileSync(STATE_FILE));
@@ -36,7 +40,8 @@ app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
-  res.redirect("/new");
+  // Fall back to /new if the pinned room is missing from state (e.g. fresh box).
+  res.redirect(PINNED_ROOM in state ? `/${PINNED_ROOM}` : "/new");
 });
 app.get("/new", (req, res) => {
   const now = moment().format("YYYYMMDD");
@@ -78,11 +83,16 @@ io.on("connection", (socket) => {
   socket.join(room);
   console.log(`Connected [socket=${socket.id},room=${room}]`);
 
-  socket.emit("init", state[room]);
+  const readonly = READONLY_ROOMS.includes(room);
+
+  socket.emit("init", { ...state[room], readonly });
   socket.on("disconnect", (e) => {
     console.log(`Disconnected [socket=${socket.id},room=${room}]`);
   });
   socket.on("draw", (e) => {
+    if (readonly) {
+      return console.log(`Draw rejected [socket=${socket.id},room=${room}]`);
+    }
     console.log(
       `Draw [socket=${socket.id},room=${room}]`
     );
@@ -91,16 +101,25 @@ io.on("connection", (socket) => {
     io.in(room).emit("draw", e);
   });
   socket.on("undo", () => {
+    if (readonly) {
+      return console.log(`Undo rejected [socket=${socket.id},room=${room}]`);
+    }
     console.log(`Undo [socket=${socket.id},room=${room}]`);
     state[room].redo.push(state[room].undo.pop());
     io.in(room).emit("undo");
   });
   socket.on("redo", () => {
+    if (readonly) {
+      return console.log(`Redo rejected [socket=${socket.id},room=${room}]`);
+    }
     console.log(`Redo [socket=${socket.id},room=${room}]`);
     state[room].undo.push(state[room].redo.pop());
     io.in(room).emit("redo");
   });
   socket.on("clear", () => {
+    if (readonly) {
+      return console.log(`Clear rejected [socket=${socket.id},room=${room}]`);
+    }
     console.log(`Clear [socket=${socket.id},room=${room}]`);
     state[room].undo = [];
     state[room].redo = [];
@@ -113,7 +132,7 @@ function serializeState() {
   const copy = {};
   for (const key of Object.keys(state)) {
     const cdate = moment.utc(key.substring(0, 8), "YYYYMMDD");
-    if (key === "20220402.b4t4fmyrcf" || today.diff(cdate, 'days') < 15) {
+    if (key === PINNED_ROOM || today.diff(cdate, 'days') < 15) {
       copy[key] = state[key];
     }
   }
