@@ -209,6 +209,24 @@ draw/undo/redo/clear over websocket produce no echoes and no state change across
 reconnect; a normal room still accepts and persists drawings (`readonly: false`);
 the other three apps still 200. Restart preserved the seeded state (SIGTERM flush).
 
+## Third deploy (2026-08-16): pinned room ephemeral instead of read-only
+
+Shipped commit `32c4fcc` (bead .14), superseding the second deploy's read-only
+behavior — hiding the drawing controls looked bad. The pinned room now serves the
+full toolbar; draw/undo/redo/clear broadcast live to connected clients exactly like
+normal rooms, but the server never mutates `state[room]` for `EPHEMERAL_ROOMS`, so
+every reconnect/refresh (and every restart/flush) resets it to the seeded drawing.
+`init` carries `ephemeral` (the `readonly` flag and the client's `enterReadonlyMode`
+gating are gone). Accepted trade-off: late joiners miss earlier ephemeral strokes, so
+client histories can diverge until a refresh — no server-side session history on
+purpose.
+
+Deployed with the forced-update one-liner from the second deploy. Verified from the
+laptop: `/` 302 → pinned room; two websocket clients see each other's draw/undo live
+and clear reaches only the non-sender (normal protocol semantics); a fresh connection
+gets exactly the 76 `seed-*` shapes back; a normal room still persists across
+reconnect (`ephemeral: false`).
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.
