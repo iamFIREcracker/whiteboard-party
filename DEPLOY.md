@@ -125,6 +125,56 @@ package **private** (expected; unlike the older apps' public packages — the dr
 read PAT covers it). The droplet then pulled `:latest` successfully with that PAT and
 got the same digest.
 
+## First deploy (2026-08-16)
+
+Deployed with exactly the verified command shape above (run manually on the box — the
+Claude Code permission classifier blocked SSH from the session, so the operator ran the
+on-box commands and pasted output back). App container:
+`once-app-whiteboard-party.a7d346-caec93`. First deploy included Let's Encrypt issuance.
+
+Verification, all from outside except where noted:
+
+1. **App up** — container running alongside the three pre-existing apps and
+   `once-proxy` (80/443). PASS
+2. **TLS + health** — `curl -sv https://whiteboard.party/up` → HTTP/2 200 `OK`;
+   issuer `C=US; O=Let's Encrypt; CN=YE2`, subject `CN=whiteboard.party`, expires
+   2026-11-14. PASS
+3. **HTTP redirect** — `http://whiteboard.party/up` → 301 `https://…`. PASS
+4. **Room lifecycle** — `/new` → 302 to a fresh room → 200; bogus room → 404. PASS
+5. **WebSocket, explicitly** — two Node socket.io-clients with
+   `transports: ['websocket']` and a `Referer: https://whiteboard.party/<room>` header
+   (the server derives the room from Referer; non-browser clients must set it) both
+   connected with `engine.transport.name === 'websocket'` — no polling fallback. PASS
+6. **Two-client sync** — client B received client A's `draw` rebroadcast in the same
+   room, through Kamal Proxy. PASS
+7. **Restart persistence** — after the draw, `docker restart` of the app container;
+   room still 200 and its `init` history still contained the drawn shape (SIGTERM
+   flush → volume → reload). PASS
+8. **Storage ownership** (on box) — `/storage` and `state.json` (711 bytes after the
+   test draw) owned `1000:1000` (`node`), as expected from volume copy-on-first-use.
+   PASS
+9. **Memory headroom** (on box) — app at 19.25MiB; box: 453MB total, 278MB available,
+   204MB swap used. Fine for now; the box runs 4 apps + proxy in 512MB, so watch this
+   as rooms accumulate (state is held fully in memory). PASS
+10. **Other apps untouched** — routing table unchanged apart from the new host;
+    `matteolandi.net`, `aspettandoemma.com`, `wedding.matteolandi.net` all still 200.
+    PASS
+
+Not yet done: drawing from a phone on cellular, and eyeballing the 101 upgrade in real
+browser devtools (item 5's scripted check is the automated stand-in).
+
+### Seeding the pinned room — deferred
+
+The planned seed (~69KB `state.json` containing pinned room `20220402.b4t4fmyrcf`) did
+NOT happen: the local copy was overwritten with `{}` on 2026-08-15 during local Docker
+verification, and no backup exists on the laptop (no Time Machine). The room currently
+404s in production. If the file is recovered (likely from the old Replit deployment):
+copy it to the volume path on the box (mounted at `/storage` in the app container),
+`chown 1000:1000` if needed (fresh writes come out `1000:1000`, see item 8), and
+restart — state is read once at boot. But the SIGTERM flush overwrites `state.json`
+on every shutdown, so place the file while the app is down:
+`docker stop <app>` → copy file into the volume → `docker start <app>`.
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.
