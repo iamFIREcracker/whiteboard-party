@@ -69,7 +69,6 @@ const sketch = function (
         add(rshape);
       }
       state.redo = event.redo;
-      if (event.readonly) enterReadonlyMode();
     });
     socket.on("draw", function (rshape) {
       add(rshape);
@@ -219,21 +218,6 @@ const sketch = function (
   document.getElementById("new").addEventListener("click", newClicked);
   document.getElementById("btn-export").addEventListener("click", exportClicked);
   document.getElementById("menu-export").addEventListener("click", exportClicked);
-
-  function enterReadonlyMode() {
-    // The server rejects draw/undo/redo/clear for this room; hide the controls
-    // that would emit them, leaving pan/zoom/export/new available.
-    document.getElementById("color").parentElement.classList.add("d-none");
-    document.querySelector('label[for="marker"]').classList.add("d-none");
-    document.querySelector('label[for="eraser"]').classList.add("d-none");
-    document.getElementById("undo").classList.add("d-none");
-    document.getElementById("redo").classList.add("d-none");
-    document.getElementById("btn-clear").classList.add("d-none");
-    document.getElementById("btn-clear").classList.remove("d-md-block");
-    document.getElementById("menu-clear").classList.add("d-none");
-    document.getElementById("handles").checked = true;
-    panClicked();
-  }
 
   function panClicked() {
     console.log('switching to panning');

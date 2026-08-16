@@ -12,9 +12,10 @@ var PRODUCTION = process.env.NODE_ENV === "production";
 var STATE_FILE = process.env.STATE_FILE || "state.json";
 var PORT = process.env.PORT || (PRODUCTION ? 80 : 3000);
 
-// The welcome board: exempt from pruning, read-only, and where GET / lands.
+// The welcome board: exempt from pruning, ephemeral (drawable and synced live, but
+// never persisted, so it always resets to the seeded drawing), and where GET / lands.
 var PINNED_ROOM = "20220402.b4t4fmyrcf";
-var READONLY_ROOMS = [PINNED_ROOM];
+var EPHEMERAL_ROOMS = [PINNED_ROOM];
 
 var state;
 try {
@@ -83,46 +84,45 @@ io.on("connection", (socket) => {
   socket.join(room);
   console.log(`Connected [socket=${socket.id},room=${room}]`);
 
-  const readonly = READONLY_ROOMS.includes(room);
+  // Ephemeral rooms broadcast commands like any other room, but never mutate their
+  // state: reconnecting (or restarting) always brings back the seeded drawing.
+  const ephemeral = EPHEMERAL_ROOMS.includes(room);
+  const tag = ephemeral ? " (ephemeral)" : "";
 
-  socket.emit("init", { ...state[room], readonly });
+  socket.emit("init", { ...state[room], ephemeral });
   socket.on("disconnect", (e) => {
     console.log(`Disconnected [socket=${socket.id},room=${room}]`);
   });
   socket.on("draw", (e) => {
-    if (readonly) {
-      return console.log(`Draw rejected [socket=${socket.id},room=${room}]`);
-    }
     console.log(
-      `Draw [socket=${socket.id},room=${room}]`
+      `Draw${tag} [socket=${socket.id},room=${room}]`
     );
-    state[room].undo.push(e);
-    state[room].redo = [];
+    if (!ephemeral) {
+      state[room].undo.push(e);
+      state[room].redo = [];
+    }
     io.in(room).emit("draw", e);
   });
   socket.on("undo", () => {
-    if (readonly) {
-      return console.log(`Undo rejected [socket=${socket.id},room=${room}]`);
+    console.log(`Undo${tag} [socket=${socket.id},room=${room}]`);
+    if (!ephemeral) {
+      state[room].redo.push(state[room].undo.pop());
     }
-    console.log(`Undo [socket=${socket.id},room=${room}]`);
-    state[room].redo.push(state[room].undo.pop());
     io.in(room).emit("undo");
   });
   socket.on("redo", () => {
-    if (readonly) {
-      return console.log(`Redo rejected [socket=${socket.id},room=${room}]`);
+    console.log(`Redo${tag} [socket=${socket.id},room=${room}]`);
+    if (!ephemeral) {
+      state[room].undo.push(state[room].redo.pop());
     }
-    console.log(`Redo [socket=${socket.id},room=${room}]`);
-    state[room].undo.push(state[room].redo.pop());
     io.in(room).emit("redo");
   });
   socket.on("clear", () => {
-    if (readonly) {
-      return console.log(`Clear rejected [socket=${socket.id},room=${room}]`);
+    console.log(`Clear${tag} [socket=${socket.id},room=${room}]`);
+    if (!ephemeral) {
+      state[room].undo = [];
+      state[room].redo = [];
     }
-    console.log(`Clear [socket=${socket.id},room=${room}]`);
-    state[room].undo = [];
-    state[room].redo = [];
     socket.to(room).emit("clear");
   });
 });
