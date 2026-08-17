@@ -227,6 +227,70 @@ and clear reaches only the non-sender (normal protocol semantics); a fresh conne
 gets exactly the 76 `seed-*` shapes back; a normal room still persists across
 reconnect (`ephemeral: false`).
 
+## Backups (layer 2: ONCE app-aware)
+
+Two layers: layer 1 is DigitalOcean's daily whole-disk snapshots of the droplet (the
+myvps repo's concern, already in place), layer 2 — this section — is ONCE's own
+app-aware backups of the app's only persistent state, `state.json` in the volume
+`once-app-whiteboard-party.a7d346`, written on box and pulled to the laptop.
+
+### The `once` backup surface (verified 2026-08-16)
+
+- `once backup <host> <filename>` — one-shot backup of an app to a file. It pauses the
+  container for the duration (~0.3s for this app's small state), writes the file,
+  resumes. The output is a gzipped tar: a test backup came out at 10463 bytes from an
+  original 43008. Mode `0600`, owner root. Beware: a manual backup also stamps
+  `lastBackup` in ONCE's state, which **defers the next automatic backup by up to
+  24 h** — the full story is in myvps INFRA.md, "ONCE auto-backups — the
+  phantom-success incident".
+- `once restore <filename>` — restores an app from a backup file.
+- `--auto-backup` / `--backup-path` turn on periodic backups: one archive per app per
+  24 h (driven by `once-background.service`), named
+  `<app>.<hash>-<YYYYMMDD-HHMMSS>.tar.gz`, trimmed on box after 30 days. Enabled with
+  (on box, the settings-only form of `once update` — note it recreates the app
+  container, so pass the full env again):
+
+  ```bash
+  once update whiteboard.party \
+    --auto-backup \
+    --backup-path /var/backups/once \
+    --env NODE_ENV=production \
+    --env STATE_FILE=/storage/state.json
+  ```
+
+  `/var/backups/once` — flat, not a per-app subdirectory — is the box convention: the
+  other auto-backed-up apps write there, `bin/myvps-review`'s weekly check watches
+  exactly that directory at depth 1, and the path is plain on-disk so layer 1's
+  snapshots capture the archives too. (First enabled 2026-08-16 pointing at a
+  `whiteboard-party/` subdirectory by mistake — invisible to that check; corrected to
+  the flat path 2026-08-17.)
+
+### The laptop pull — myvps repo's job
+
+Everything after the archive lands on disk — the off-box pull, per-app freshness
+monitoring, the daily laptop schedule — is box ops, not app deployability, and lives in
+the myvps repo: `bin/pull-once-backups` +
+`launchd/com.matteolandi.once-backup-pull.plist`, documented in INFRA.md under "ONCE
+auto-backups". Archives land in `~/Backups/once/` on the laptop. (This repo briefly held
+a whiteboard-only pull script on 2026-08-16; it moved there, generalized, the next day.)
+
+### Restoring
+
+Manual, on the box:
+
+```bash
+once restore /var/backups/once/<archive>.tar.gz
+```
+
+If the archive only exists on the laptop (`~/Backups/once/`), push it over first:
+
+```bash
+scp -P 2222 -i ~/.ssh/id_myvps <file> root@100.109.29.49:/tmp/
+```
+
+A restore has not been exercised yet; the above is what the commands are documented to
+do. The record of the first real restore test goes here once it has been run.
+
 ## Box state (2026-08-14)
 
 - `once` v0.3.0 at `/usr/local/bin/once`, `once-background.service` running.
