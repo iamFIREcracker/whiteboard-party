@@ -59,7 +59,7 @@ Settings can be changed later without redeploying from scratch:
 
 ### Build & push
 
-The `Dockerfile` in the repo root builds the image (pinned `node:22.x-alpine` patch tag,
+The `Dockerfile` in the repo root builds the image (pinned `node:26.x-alpine` patch tag,
 see its `FROM` line; prod deps only via `npm ci --omit=dev`; `node_modules` shipped
 because the server serves it at `/node_modules`; runs as the `node` user; listens on 80;
 `/storage` pre-created and owned by `node`).

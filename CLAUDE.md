@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `npm run start-dev` — run the dev server (nodemon, restarts on changes to `index.js`; ignores `state.json` and `public/`). App serves on http://localhost:3000.
-- Node version: v17.8.0 (`.nvmrc`).
+- Node version: v26 (`.nvmrc`; Dockerfile pins the patch tag).
 - Formatting: prettier (default config). No tests, no linter, no build step — plain JS served as-is (`public/` and `node_modules/` are served statically, no bundler).
 
 ## Architecture
