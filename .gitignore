@@ -7,3 +7,4 @@ state.json
 *.db
 .beads-credential-key
 .beads/proxieddb/
+.beads/*.jsonl
