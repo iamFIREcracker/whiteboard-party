@@ -227,6 +227,28 @@ and clear reaches only the non-sender (normal protocol semantics); a fresh conne
 gets exactly the 76 `seed-*` shapes back; a normal room still persists across
 reconnect (`ephemeral: false`).
 
+## Fourth deploy (2026-10-24): Node.js 26.12.1 (Node2Shell fix)
+
+Shipped commit `81d0714` (bead vxj): base image `node:22.23.2-alpine` →
+`node:26.12.1-alpine`. 22.23.2 was affected by Node2Shell (CVE-2026-111497, an
+out-of-bounds write in the bundled Brotli decoder) and the other CVEs in the
+2026-10-21 Node.js security release; 26.12.1 is the latest release and carries the fixes for all of
+them. The app itself never decompresses Brotli (Express 4's body-parser has no Brotli
+support, socket.io only compresses, `responseInterceptor` is unused), so exposure was
+low, but the upgrade was taken anyway. Image `:81d0714` / `:latest`, linux/amd64,
+digest `sha256:c6d92c7bb096…`.
+
+Deployed with the forced-update one-liner from the second deploy, plus
+`--auto-backup --backup-path /var/backups/once` (`once update` recreates the container
+from the flags it is given, so the backup settings were passed again to keep them).
+The container reported `node --version` → `v26.12.1` on box. Verified from the
+laptop: `/up` 200; `/` 302 → pinned room; `/new` creates a room (200); unknown room 404;
+two websocket clients (`transport: websocket`) see each other's draw; the pinned room's
+`init` has all 76 seed shapes with `ephemeral: true` (so `state.json` was read back
+after the container was recreated); the other three apps still 200. The only new log
+output is a harmless `DEP0060` (`util._extend`) deprecation warning from
+http-proxy, which http-proxy-middleware depends on.
+
 ## Backups (layer 2: ONCE app-aware)
 
 Two layers: layer 1 is DigitalOcean's daily whole-disk snapshots of the droplet (the
